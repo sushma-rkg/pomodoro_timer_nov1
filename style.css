@@ -52,8 +52,8 @@ body {
     radial-gradient(circle at 72% 62%, #e28a1c 0, transparent 38%),
     radial-gradient(circle at 40% 80%, #b9611a 0, transparent 30%),
     linear-gradient(160deg, #3a7f8c, #1a4258 60%, #0f2236);
-  filter: blur(26px);
-  transform: scale(1.25);
+  filter: blur(var(--blur, 26px));
+  transform: scale(var(--scale, 1.25));
 }
 
 .panel {
