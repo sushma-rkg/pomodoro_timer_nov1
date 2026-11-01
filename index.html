@@ -18,6 +18,16 @@
 
     <section class="panel">
       <div class="time" id="time">25:00</div>
+      <div class="length" id="length">
+        <label>Minutes
+          <input id="minutes" type="text" inputmode="numeric" maxlength="3" autocomplete="off" value="25">
+        </label>
+        <span class="colon" aria-hidden="true">:</span>
+        <label>Seconds
+          <input id="seconds" type="text" inputmode="numeric" maxlength="2" autocomplete="off" value="00">
+        </label>
+      </div>
+      <p class="message" id="message" role="alert" hidden></p>
       <div class="details" id="details" hidden></div>
       <div class="btns">
         <button class="btn main" id="main-btn" type="button">Start</button>
