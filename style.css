@@ -43,17 +43,14 @@ body {
   background: #000;
 }
 
-/* Placeholder artwork, blurred */
+/* The painting: the whole picture fits inside the space, never stretched or cut off.
+   Any spare room shows the dark background of .inner. */
 .art {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 28% 30%, #f7cf4a 0, transparent 32%),
-    radial-gradient(circle at 72% 62%, #e28a1c 0, transparent 38%),
-    radial-gradient(circle at 40% 80%, #b9611a 0, transparent 30%),
-    linear-gradient(160deg, #3a7f8c, #1a4258 60%, #0f2236);
-  filter: blur(var(--blur, 26px));
-  transform: scale(var(--scale, 1.25));
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .panel {
@@ -138,6 +135,17 @@ body {
 
 .details[hidden] {
   display: none;
+}
+
+.details {
+  max-width: 100%;
+  text-align: center;
+}
+
+.details h3,
+.details p {
+  max-width: 100%;
+  overflow-wrap: anywhere; /* long names wrap instead of running off the screen */
 }
 
 .details h3 {

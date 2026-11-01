@@ -10,19 +10,21 @@ const secondsInput = document.getElementById("seconds");
 const messageEl = document.getElementById("message");
 const timeEl = document.getElementById("time");
 const ringEl = document.querySelector(".ring");
-const artEl = document.querySelector(".art");
+const artEl = document.getElementById("art");
 const mainBtn = document.getElementById("main-btn");
 const resetBtn = document.getElementById("reset-btn");
 const panelEl = document.querySelector(".panel");
 const detailsEl = document.getElementById("details");
 
-// Made-up details for now. Real ones from the Met come in a later step.
-const PLACEHOLDER_PAINTING = {
-  title: "Painting name",
-  artist: "Artist name",
-  year: "Year",
-  link: "https://www.metmuseum.org/",
-};
+// The Met Museum's free public API
+const MET_SEARCH_URL =
+  "https://collectionapi.metmuseum.org/public/collection/v1.1/search?q=*&medium=Paintings&hasImages=true";
+const MET_OBJECT_URL = "https://collectionapi.metmuseum.org/public/collection/v1/objects/";
+const MAX_PICK_TRIES = 25;
+
+// The painting on screen: its image and details all come from one Met record.
+let currentPainting = null;
+let loadCount = 0; // so an old, slow request can't replace a newer painting
 
 // state: "idle" (before start), "running", "paused", or "finished"
 let state = "idle";
@@ -45,9 +47,6 @@ function render() {
   // How much of the time has passed: 0 (start) to 1 (finished)
   const progress = 1 - remainingMs / totalMs;
   ringEl.style.setProperty("--p", progress * 100 + "%");
-  // The artwork starts blurred and gets sharper as time passes
-  artEl.style.setProperty("--blur", 26 * (1 - progress) + "px");
-  artEl.style.setProperty("--scale", 1 + 0.25 * (1 - progress));
 
   if (state === "running") {
     mainBtn.textContent = "Pause";
@@ -75,20 +74,85 @@ function render() {
   }
 }
 
+async function fetchJson(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("The Met answered with status " + response.status);
+  }
+  return response.json();
+}
+
+// A painting qualifies if it is public domain, has an image, and is a painting
+function qualifies(record) {
+  return (
+    record.isPublicDomain === true &&
+    Boolean(record.primaryImageSmall) &&
+    /^Paintings/.test(record.classification || "")
+  );
+}
+
+// Keep only what we need, exactly as the Met gives it.
+function toPainting(record) {
+  return {
+    image: record.primaryImageSmall,
+    title: (record.title || "").trim() || "Unknown",
+    artist: (record.artistDisplayName || "").trim() || "Unknown",
+    year: (record.objectDate || "").trim() || "Unknown",
+    link: record.objectURL || "https://www.metmuseum.org/art/collection/search/" + record.objectID,
+  };
+}
+
+// Pick one random painting from the Met and show its image.
+async function loadPainting() {
+  const myLoad = ++loadCount;
+  currentPainting = null;
+  artEl.hidden = true;
+  artEl.removeAttribute("src");
+
+  try {
+    // First ask how many paintings there are, then pick a random one
+    const first = await fetchJson(MET_SEARCH_URL + "&limit=1");
+    for (let attempt = 0; attempt < MAX_PICK_TRIES; attempt++) {
+      const offset = Math.floor(Math.random() * first.total);
+      const found = await fetchJson(MET_SEARCH_URL + "&limit=1&offset=" + offset);
+      if (!found.objectIDs || found.objectIDs.length === 0) {
+        continue;
+      }
+      const record = await fetchJson(MET_OBJECT_URL + found.objectIDs[0]);
+      if (!qualifies(record)) {
+        continue; // quietly pick another
+      }
+      if (myLoad !== loadCount) {
+        return; // a newer painting was asked for
+      }
+      currentPainting = toPainting(record);
+      artEl.src = currentPainting.image;
+      return;
+    }
+  } catch (error) {
+    // No error messages on the page yet (a later step). Leave a note for testing.
+    console.error("Could not get a painting from the Met:", error);
+  }
+}
+
+artEl.addEventListener("load", function () {
+  artEl.hidden = false;
+});
+
 function showDetails() {
-  if (!detailsEl.hidden) {
+  if (!detailsEl.hidden || !currentPainting) {
     return;
   }
   const title = document.createElement("h3");
-  title.textContent = PLACEHOLDER_PAINTING.title;
+  title.textContent = currentPainting.title;
 
   const meta = document.createElement("p");
   meta.className = "meta";
-  meta.textContent = PLACEHOLDER_PAINTING.artist + " · " + PLACEHOLDER_PAINTING.year;
+  meta.textContent = currentPainting.artist + " · " + currentPainting.year;
 
   const linkWrap = document.createElement("p");
   const link = document.createElement("a");
-  link.href = PLACEHOLDER_PAINTING.link;
+  link.href = currentPainting.link;
   link.target = "_blank";
   link.rel = "noopener";
   link.textContent = "Read about this painting";
@@ -224,7 +288,8 @@ secondsInput.addEventListener("keydown", onLengthEnter);
 
 mainBtn.addEventListener("click", function () {
   if (state === "finished") {
-    resetCountdown(); // "Restart session"
+    resetCountdown(); // "Restart session": back to the start, with a new painting
+    loadPainting();
   } else if (state === "running") {
     pauseCountdown();
   } else {
@@ -243,3 +308,4 @@ document.addEventListener("visibilitychange", function () {
 
 writeBoxes(totalMs); // browsers can remember old box values, so set them again
 render();
+loadPainting();
