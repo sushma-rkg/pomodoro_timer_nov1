@@ -11,6 +11,12 @@ const messageEl = document.getElementById("message");
 const timeEl = document.getElementById("time");
 const ringEl = document.querySelector(".ring");
 const artEl = document.getElementById("art");
+const pictureEl = document.getElementById("picture");
+
+// Blur: strongest at the start, none at 00:00.
+// The strongest blur is a share of the painting's shorter side, so it looks
+// the same on a phone and on a laptop (about 40px on a laptop).
+const MAX_BLUR_SHARE = 0.09;
 const mainBtn = document.getElementById("main-btn");
 const resetBtn = document.getElementById("reset-btn");
 const panelEl = document.querySelector(".panel");
@@ -41,8 +47,21 @@ function formatTime(ms) {
   return minutes + ":" + seconds;
 }
 
+// Set the blur from the time left (the same time left the timer shows)
+function applyBlur() {
+  const timeLeftShare = totalMs > 0 ? remainingMs / totalMs : 0; // 1 at start, 0 at 00:00
+  const shorterSide = Math.min(pictureEl.clientWidth, pictureEl.clientHeight) || 400;
+  const blur = MAX_BLUR_SHARE * shorterSide * timeLeftShare;
+  // Zoom in while blurred, so the blur's soft edge (about 2x the blur wide, and
+  // zoomed too) falls outside the box. The zoom goes back to 1 at 00:00.
+  const zoom = 1 / (1 - (4 * blur) / shorterSide);
+  artEl.style.filter = "blur(" + blur.toFixed(2) + "px)";
+  artEl.style.transform = "scale(" + zoom.toFixed(4) + ")";
+}
+
 function render() {
   timeEl.textContent = formatTime(remainingMs);
+  applyBlur();
 
   // How much of the time has passed: 0 (start) to 1 (finished)
   const progress = 1 - remainingMs / totalMs;
@@ -106,7 +125,7 @@ function toPainting(record) {
 async function loadPainting() {
   const myLoad = ++loadCount;
   currentPainting = null;
-  artEl.hidden = true;
+  pictureEl.hidden = true;
   artEl.removeAttribute("src");
 
   try {
@@ -136,8 +155,17 @@ async function loadPainting() {
 }
 
 artEl.addEventListener("load", function () {
-  artEl.hidden = false;
+  // Make the box the shape of this painting, show it, and set the blur
+  // straight away, so the painting is never seen sharp by mistake.
+  pictureEl.style.setProperty("--ar", artEl.naturalWidth / artEl.naturalHeight);
+  pictureEl.hidden = false;
+  applyBlur();
 });
+
+// If the window changes size (for example turning a phone), fit the blur again
+if (window.ResizeObserver) {
+  new ResizeObserver(applyBlur).observe(pictureEl);
+}
 
 function showDetails() {
   if (!detailsEl.hidden || !currentPainting) {

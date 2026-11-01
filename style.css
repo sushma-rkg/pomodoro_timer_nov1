@@ -41,16 +41,35 @@ body {
   border-radius: 23px;
   overflow: hidden;
   background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size; /* lets .picture size itself from this space */
 }
 
-/* The painting: the whole picture fits inside the space, never stretched or cut off.
-   Any spare room shows the dark background of .inner. */
+/* A box exactly the shape of the painting, as big as fits in the space.
+   Any spare room shows the dark background of .inner.
+   --ar is the painting's width divided by its height (set in script.js). */
+.picture {
+  position: relative;
+  overflow: hidden; /* the blur is cut off cleanly at the painting's edge */
+  width: min(100cqw, calc(100cqh * var(--ar, 1)));
+  aspect-ratio: var(--ar, 1);
+}
+
+/* The painting. It is blurred (and zoomed in a little, to keep the blur's
+   soft edge outside the box) until the timer reaches 00:00. script.js changes
+   the blur and zoom as time passes. The values here are the strongest blur,
+   so the painting can never show sharp by mistake. */
 .art {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: blur(40px);
+  transform: scale(1.3);
+  transition: filter 0.25s linear, transform 0.25s linear;
 }
 
 .panel {
