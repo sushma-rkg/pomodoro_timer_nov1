@@ -1,8 +1,118 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  background: #1c1d21;
+  color: #f3efe6;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Phone layout: painting on top, timer below */
+.split {
   display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.left {
+  display: flex;
+  padding: 16px;
+  height: 43dvh;
+  min-height: 220px;
+  flex: none;
+}
+
+/* Gold line around the painting (empty at 0%) */
+.ring {
+  --p: 0%;
+  flex: 1;
+  padding: 5px;
+  border-radius: 28px;
+  background: conic-gradient(#e2b04a var(--p), rgba(255, 255, 255, 0.14) 0);
+}
+
+.inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 23px;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Placeholder artwork, blurred */
+.art {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 28% 30%, #f7cf4a 0, transparent 32%),
+    radial-gradient(circle at 72% 62%, #e28a1c 0, transparent 38%),
+    radial-gradient(circle at 40% 80%, #b9611a 0, transparent 30%),
+    linear-gradient(160deg, #3a7f8c, #1a4258 60%, #0f2236);
+  filter: blur(26px);
+  transform: scale(1.25);
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: sans-serif;
+  gap: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.time {
+  font-weight: 300;
+  font-size: 60px;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 11px 24px;
+  border-radius: 999px;
+  border: 1px solid #5a5b62;
+  background: transparent;
+  color: #f3efe6;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn.main {
+  background: #e2b04a;
+  border-color: #e2b04a;
+  color: #1c1d21;
+}
+
+/* Laptop layout: painting on the left, timer on the right */
+@media (min-width: 700px) {
+  .split {
+    flex-direction: row;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .left {
+    width: 56%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .time {
+    font-size: clamp(64px, 7vw, 110px);
+  }
 }
