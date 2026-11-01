@@ -7,7 +7,37 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Pomodoro Art</h1>
+  <main class="split">
+    <section class="left">
+      <div class="ring">
+        <div class="inner">
+          <p class="art-message" id="art-message" role="status">Loading painting…</p>
+          <div class="picture" id="picture" hidden>
+            <img class="art" id="art" alt="Artwork">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="time" id="time">25:00</div>
+      <div class="length" id="length">
+        <label>Minutes
+          <input id="minutes" type="text" inputmode="numeric" maxlength="3" autocomplete="off" value="25">
+        </label>
+        <span class="colon" aria-hidden="true">:</span>
+        <label>Seconds
+          <input id="seconds" type="text" inputmode="numeric" maxlength="2" autocomplete="off" value="00">
+        </label>
+      </div>
+      <p class="message" id="message" role="alert" hidden></p>
+      <div class="details" id="details" hidden></div>
+      <div class="btns">
+        <button class="btn main" id="main-btn" type="button">Start</button>
+        <button class="btn" id="reset-btn" type="button">Reset</button>
+      </div>
+    </section>
+  </main>
   <script src="script.js"></script>
 </body>
 </html>

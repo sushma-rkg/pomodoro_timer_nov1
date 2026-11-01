@@ -1,8 +1,244 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
+  background: #1c1d21;
+  color: #f3efe6;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Phone layout: painting on top, timer below */
+.split {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.left {
+  display: flex;
+  padding: 16px;
+  height: 43dvh;
+  min-height: 220px;
+  flex: none;
+}
+
+/* Gold line around the painting (empty at 0%) */
+.ring {
+  --p: 0%;
+  flex: 1;
+  padding: 5px;
+  border-radius: 28px;
+  background: conic-gradient(#e2b04a var(--p), rgba(255, 255, 255, 0.14) 0);
+}
+
+.inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 23px;
+  overflow: hidden;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: sans-serif;
+  container-type: size; /* lets .picture size itself from this space */
+}
+
+/* "Loading painting…" and the friendly message, in the middle of the space */
+.art-message {
+  margin: 0;
+  padding: 0 24px;
+  max-width: 320px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #b7b3a8;
+}
+
+/* A box exactly the shape of the painting, as big as fits in the space.
+   Any spare room shows the dark background of .inner.
+   --ar is the painting's width divided by its height (set in script.js). */
+.picture {
+  position: relative;
+  overflow: hidden; /* the blur is cut off cleanly at the painting's edge */
+  width: min(100cqw, calc(100cqh * var(--ar, 1)));
+  aspect-ratio: var(--ar, 1);
+}
+
+/* The painting. It is blurred (and zoomed in a little, to keep the blur's
+   soft edge outside the box) until the timer reaches 00:00. script.js changes
+   the blur and zoom as time passes. The values here are the strongest blur,
+   so the painting can never show sharp by mistake. */
+.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: blur(40px);
+  transform: scale(1.3);
+  transition: filter 0.25s linear, transform 0.25s linear;
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.time {
+  font-weight: 300;
+  font-size: 60px;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Boxes to set the timer length */
+.length {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.length label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #b7b3a8;
+}
+
+.length input {
+  width: 72px;
+  padding: 9px 0;
+  text-align: center;
+  font: inherit;
+  font-size: 20px;
+  color: #f3efe6;
+  background: transparent;
+  border: 1px solid #5a5b62;
+  border-radius: 999px;
+}
+
+.length input:focus-visible {
+  outline: 2px solid #e2b04a;
+  outline-offset: 2px;
+}
+
+.length input:disabled {
+  opacity: 0.4;
+}
+
+.length .colon {
+  font-size: 22px;
+  padding-bottom: 9px;
+}
+
+.panel.finished .length {
+  display: none;
+}
+
+.message {
+  margin: 0;
+  max-width: 260px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #f0a98a;
+}
+
+/* Painting details (only shown when the timer is finished) */
+.details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.details[hidden] {
+  display: none;
+}
+
+.details {
+  max-width: 100%;
+  text-align: center;
+}
+
+.details h3,
+.details p {
+  max-width: 100%;
+  overflow-wrap: anywhere; /* long names wrap instead of running off the screen */
+}
+
+.details h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.details p {
+  margin: 0;
+}
+
+.details .meta {
+  color: #b7b3a8;
+}
+
+.details a {
+  color: #e2b04a;
+}
+
+.panel.finished .time {
+  font-size: 38px;
+}
+
+.btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 11px 24px;
+  border-radius: 999px;
+  border: 1px solid #5a5b62;
+  background: transparent;
+  color: #f3efe6;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn.main {
+  background: #e2b04a;
+  border-color: #e2b04a;
+  color: #1c1d21;
+}
+
+/* Laptop layout: painting on the left, timer on the right */
+@media (min-width: 700px) {
+  .split {
+    flex-direction: row;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .left {
+    width: 56%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .time {
+    font-size: clamp(64px, 7vw, 110px);
+  }
 }
