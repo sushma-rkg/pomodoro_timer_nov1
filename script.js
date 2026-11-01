@@ -12,6 +12,7 @@ const timeEl = document.getElementById("time");
 const ringEl = document.querySelector(".ring");
 const artEl = document.getElementById("art");
 const pictureEl = document.getElementById("picture");
+const artMessageEl = document.getElementById("art-message");
 
 // Blur: strongest at the start, none at 00:00.
 // The strongest blur is a share of the painting's shorter side, so it looks
@@ -26,7 +27,11 @@ const detailsEl = document.getElementById("details");
 const MET_SEARCH_URL =
   "https://collectionapi.metmuseum.org/public/collection/v1.1/search?q=*&medium=Paintings&hasImages=true";
 const MET_OBJECT_URL = "https://collectionapi.metmuseum.org/public/collection/v1/objects/";
-const MAX_PICK_TRIES = 25;
+const MAX_PICK_TRIES = 5; // how many different paintings to try
+const REQUEST_TIMEOUT_MS = 10 * 1000; // how long to wait for the Met
+const LOADING_TEXT = "Loading painting…";
+const NO_PAINTING_TEXT =
+  "We couldn't load a painting right now. You can still use the timer. Refresh the page to try again.";
 
 // The painting on screen: its image and details all come from one Met record.
 let currentPainting = null;
@@ -93,12 +98,48 @@ function render() {
   }
 }
 
+// Ask the Met for something. Gives up after 10 seconds, or on any error.
 async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("The Met answered with status " + response.status);
+  const controller = new AbortController();
+  const timer = setTimeout(function () {
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      const error = new Error("The Met answered with status " + response.status);
+      error.status = response.status;
+      throw error;
+    }
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
   }
-  return response.json();
+}
+
+// Check that an image really loads before we use it (so we never show a broken image)
+function preloadImage(url) {
+  return new Promise(function (resolve, reject) {
+    const image = new Image();
+    const timer = setTimeout(function () {
+      reject(new Error("The image took too long"));
+    }, REQUEST_TIMEOUT_MS);
+    image.onload = function () {
+      clearTimeout(timer);
+      resolve();
+    };
+    image.onerror = function () {
+      clearTimeout(timer);
+      reject(new Error("The image did not load"));
+    };
+    image.src = url;
+  });
+}
+
+function showArtMessage(text) {
+  pictureEl.hidden = true;
+  artMessageEl.textContent = text;
+  artMessageEl.hidden = false;
 }
 
 // A painting qualifies if it is public domain, has an image, and is a painting
@@ -125,32 +166,68 @@ function toPainting(record) {
 async function loadPainting() {
   const myLoad = ++loadCount;
   currentPainting = null;
-  pictureEl.hidden = true;
   artEl.removeAttribute("src");
+  showArtMessage(LOADING_TEXT);
 
   try {
     // First ask how many paintings there are, then pick a random one
     const first = await fetchJson(MET_SEARCH_URL + "&limit=1");
+    if (myLoad !== loadCount) {
+      return; // a newer painting was asked for
+    }
+    if (!first.total) {
+      throw new Error("The Met gave no paintings");
+    }
+
     for (let attempt = 0; attempt < MAX_PICK_TRIES; attempt++) {
       const offset = Math.floor(Math.random() * first.total);
       const found = await fetchJson(MET_SEARCH_URL + "&limit=1&offset=" + offset);
-      if (!found.objectIDs || found.objectIDs.length === 0) {
-        continue;
+      if (myLoad !== loadCount) {
+        return;
       }
-      const record = await fetchJson(MET_OBJECT_URL + found.objectIDs[0]);
-      if (!qualifies(record)) {
+      if (!found.objectIDs || found.objectIDs.length === 0) {
         continue; // quietly pick another
       }
-      if (myLoad !== loadCount) {
-        return; // a newer painting was asked for
+
+      let record;
+      try {
+        record = await fetchJson(MET_OBJECT_URL + found.objectIDs[0]);
+      } catch (error) {
+        if (error.status === 404) {
+          continue; // the Met has no such record: quietly pick another
+        }
+        throw error; // anything else: the Met is not working well
       }
+      if (myLoad !== loadCount) {
+        return;
+      }
+      if (!qualifies(record)) {
+        continue; // not a public domain painting with an image: pick another
+      }
+
+      try {
+        await preloadImage(record.primaryImageSmall);
+      } catch (error) {
+        continue; // the image does not load: pick another
+      }
+      if (myLoad !== loadCount) {
+        return;
+      }
+
+      // This one is good. Keep the image and the details from this same record.
       currentPainting = toPainting(record);
       artEl.src = currentPainting.image;
       return;
     }
+
+    // Tried 5 different paintings and none worked
+    showArtMessage(NO_PAINTING_TEXT);
   } catch (error) {
-    // No error messages on the page yet (a later step). Leave a note for testing.
-    console.error("Could not get a painting from the Met:", error);
+    // The Met is slow, offline or gave an error
+    if (myLoad === loadCount) {
+      console.error("Could not get a painting from the Met:", error);
+      showArtMessage(NO_PAINTING_TEXT);
+    }
   }
 }
 
@@ -158,8 +235,17 @@ artEl.addEventListener("load", function () {
   // Make the box the shape of this painting, show it, and set the blur
   // straight away, so the painting is never seen sharp by mistake.
   pictureEl.style.setProperty("--ar", artEl.naturalWidth / artEl.naturalHeight);
+  artMessageEl.hidden = true;
   pictureEl.hidden = false;
   applyBlur();
+});
+
+// If the image fails after all, never leave a broken image on screen
+artEl.addEventListener("error", function () {
+  if (artEl.getAttribute("src")) {
+    currentPainting = null;
+    showArtMessage(NO_PAINTING_TEXT);
+  }
 });
 
 // If the window changes size (for example turning a phone), fit the blur again

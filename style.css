@@ -47,6 +47,17 @@ body {
   container-type: size; /* lets .picture size itself from this space */
 }
 
+/* "Loading painting…" and the friendly message, in the middle of the space */
+.art-message {
+  margin: 0;
+  padding: 0 24px;
+  max-width: 320px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #b7b3a8;
+}
+
 /* A box exactly the shape of the painting, as big as fits in the space.
    Any spare room shows the dark background of .inner.
    --ar is the painting's width divided by its height (set in script.js). */
