@@ -74,6 +74,40 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Painting details (only shown when the timer is finished) */
+.details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.details[hidden] {
+  display: none;
+}
+
+.details h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.details p {
+  margin: 0;
+}
+
+.details .meta {
+  color: #b7b3a8;
+}
+
+.details a {
+  color: #e2b04a;
+}
+
+.panel.finished .time {
+  font-size: 38px;
+}
+
 .btns {
   display: flex;
   gap: 10px;

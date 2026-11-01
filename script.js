@@ -6,8 +6,18 @@ const ringEl = document.querySelector(".ring");
 const artEl = document.querySelector(".art");
 const mainBtn = document.getElementById("main-btn");
 const resetBtn = document.getElementById("reset-btn");
+const panelEl = document.querySelector(".panel");
+const detailsEl = document.getElementById("details");
 
-// state: "idle" (before start), "running", or "paused"
+// Made-up details for now. Real ones from the Met come in a later step.
+const PLACEHOLDER_PAINTING = {
+  title: "Painting name",
+  artist: "Artist name",
+  year: "Year",
+  link: "https://www.metmuseum.org/",
+};
+
+// state: "idle" (before start), "running", "paused", or "finished"
 let state = "idle";
 let remainingMs = TOTAL_MS;
 let endTime = 0; // the clock time when the countdown reaches zero
@@ -35,9 +45,49 @@ function render() {
     mainBtn.textContent = "Pause";
   } else if (state === "paused") {
     mainBtn.textContent = "Resume";
+  } else if (state === "finished") {
+    mainBtn.textContent = "Restart session";
   } else {
     mainBtn.textContent = "Start";
   }
+
+  // Finished: only "Restart session" is left, and the painting details appear
+  const finished = state === "finished";
+  resetBtn.hidden = finished;
+  panelEl.classList.toggle("finished", finished);
+  if (finished) {
+    showDetails();
+  } else {
+    hideDetails();
+  }
+}
+
+function showDetails() {
+  if (!detailsEl.hidden) {
+    return;
+  }
+  const title = document.createElement("h3");
+  title.textContent = PLACEHOLDER_PAINTING.title;
+
+  const meta = document.createElement("p");
+  meta.className = "meta";
+  meta.textContent = PLACEHOLDER_PAINTING.artist + " · " + PLACEHOLDER_PAINTING.year;
+
+  const linkWrap = document.createElement("p");
+  const link = document.createElement("a");
+  link.href = PLACEHOLDER_PAINTING.link;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = "Read about this painting";
+  linkWrap.appendChild(link);
+
+  detailsEl.replaceChildren(title, meta, linkWrap);
+  detailsEl.hidden = false;
+}
+
+function hideDetails() {
+  detailsEl.hidden = true;
+  detailsEl.replaceChildren(); // remove the text completely
 }
 
 function tick() {
@@ -47,6 +97,7 @@ function tick() {
   if (remainingMs === 0) {
     clearInterval(intervalId);
     intervalId = null;
+    state = "finished";
   }
   render();
 }
@@ -61,6 +112,9 @@ function startCountdown() {
 
 function pauseCountdown() {
   tick(); // save the exact time left
+  if (state === "finished") {
+    return; // the time ran out at the same moment
+  }
   clearInterval(intervalId);
   intervalId = null;
   state = "paused";
@@ -76,10 +130,9 @@ function resetCountdown() {
 }
 
 mainBtn.addEventListener("click", function () {
-  if (remainingMs === 0) {
-    return; // finished: nothing happens (Reset still works)
-  }
-  if (state === "running") {
+  if (state === "finished") {
+    resetCountdown(); // "Restart session"
+  } else if (state === "running") {
     pauseCountdown();
   } else {
     startCountdown(); // from "idle" (Start) or "paused" (Resume)
